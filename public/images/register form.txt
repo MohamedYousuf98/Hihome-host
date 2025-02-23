@@ -1,0 +1,34 @@
+اريد عمل  validation zod لهذه ال  register form. 
+مع العلم ان كل  ال  inputs required 
+
+كما اريد استخدام هذا ال  api  في ال  register form
+curl --location 'https://6c733c06-d83f-4f67-bc78-578e26b8f936.mock.pstmn.io/v1/auth/register' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: ••••••' \
+--data-raw '{
+    "first_name": "mohamed",
+    "last_name": "ahmed",
+    "email": "mohamed@ahmed.com",
+    "password": "Aa123123@",
+    "city" : "tanta",
+    "gender" : 1, 
+    "english_proficiency" : 1,
+     "phone":"01023130111"
+}'
+من المفترض ان يبعتلي  token 
+وهتاخد ال  token  تروح بيه علي ال  verify otp 
+curl --location 'https://6c733c06-d83f-4f67-bc78-578e26b8f936.mock.pstmn.io/v1/host/auth/verify-otp' \
+--header 'Accept-Language: en' \
+--header 'Accept-Currency: sar' \
+--header 'Platform: iOS' \
+--header 'Version: 1.1.2' \
+--header 'x-api-key: PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e' \
+--header 'Content-Type: application/json' \
+--data '{
+    "token": "Q7617WWykVjDb0e64SjCIccVjYD9qcUb98u1osEje3WNOWo4EIZLmWjLT7VA",
+    "code": 1234
+}'
+
+ومن المفترض ان يرجع لك user resource  
+
+قم بتنفيذ هذه العمليه بدقه وبأفضل طريقه 

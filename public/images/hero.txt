@@ -1,0 +1,50 @@
+ {/* ------------------------------------ Secont Hero Section ---------------------------------- */}
+      <main className="relative h-[550px] overflow-hidden">
+        <Swiper
+          modules={[Pagination, Autoplay]}
+          pagination={{
+            clickable: true,
+          }}
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+          }}
+          loop={true}
+          className="h-full w-full [&_.swiper-pagination-bullet]:!w-4 [&_.swiper-pagination-bullet]:!h-2 [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:!bg-white/80 [&_.swiper-pagination-bullet-active]:!w-8 [&_.swiper-pagination-bullet-active]:!h-2 [&_.swiper-pagination-bullet-active]:!bg-white"
+        >
+          {slides.map((slide, index) => (
+            <SwiperSlide key={index}>
+              <div className="relative h-full w-full">
+                {/* Background Image with Parallax */}
+                <div
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                  style={{ 
+                    backgroundImage: `url(${slide.image})`,
+                    backgroundAttachment: 'fixed',
+                    transform: 'translateZ(0)',
+                    willChange: 'transform'
+                  }}
+                />
+                
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-[#CD4D33]/60" />
+                
+                {/* Content */}
+                <div className="px-4 sm:px-5 md:px-5 xl:px-32 2xl:px-62 absolute inset-0 flex items-center">
+                  <div className="max-w-2xl text-white">
+                    <h1 className="text-3xl md:text-2xl lg:text-6xl font-bold mb-4">
+                      {slide.title}
+                    </h1>
+                    <p className="text-xl md:text-2xl lg:text-lg mb-8 font-medium">
+                      {slide.description}
+                    </p>
+                    <button className="border-2 border-white ps-8 pe-8 py-3 md:ps-10 md:pe-10 md:py-4 rounded-full text-white text-base md:text-lg font-medium hover:bg-white hover:text-[#CD4D33] transition-colors duration-300">
+                      Get Started
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </main>
