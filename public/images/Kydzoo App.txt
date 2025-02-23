@@ -1,0 +1,5 @@
+docker exec -it Kydzzo_app bash
+
+php artisan make:migration create_students_table
+
+php artisan migrate
