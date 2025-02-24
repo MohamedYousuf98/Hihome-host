@@ -33,8 +33,7 @@ const registerSchema = z.object({
     invalid_type_error: 'Please select a valid English level'
   }),
   phone: z.string()
-    .min(10, 'Phone number must be at least 10 digits')
-    .regex(/^\+?[1-9]\d{9,14}$/, 'Please enter a valid phone number'),
+    .min(7, 'Phone number is required'),  
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -78,10 +77,9 @@ export default function Register() {
         email: validatedData.email,
         password: validatedData.password,
         phone: validatedData.phone.startsWith('+') ? validatedData.phone.substring(1) : validatedData.phone,
-        // The following IDs should be obtained from your backend or configuration
-        city_id: 'e12e21-eqeww',
-        gender_id: '12rwr2-231',
-        english_id: 'qwr2-r23d'
+        city: validatedData.city,
+        gender: validatedData.gender,
+        english_proficiency: validatedData.english_proficiency
       };
 
       const response = await authAPI.register(apiData);
@@ -133,33 +131,40 @@ export default function Register() {
         throw new Error('Registration token not found');
       }
 
+      if (!otpCode || otpCode.length !== 4) {
+        setErrors({ otp: 'Please enter a valid 4-digit code' });
+        return;
+      }
       const response = await authAPI.verifyOTP({
         token: storedToken,
         code: parseInt(otpCode, 10)
       });
 
-      if (response.data) {
+      console.log('Verification response:', response);
+
+      // Check if we have a valid success response
+      if (response.data ) {
         localStorage.removeItem('registration_token');
         localStorage.setItem('userData', JSON.stringify(response.data));
         setUser(response.data);
         setVerificationSuccess(true);
         
         setTimeout(() => {
-          router.push('/home');
-        }, 300000);
+          router.push('/');
+        }, 4000);
+      } else {
+        // Handle unsuccessful verification
+        throw new Error(response.message || 'Invalid verification code');
       }
 
     } catch (error) {
-      console.error('OTP verification error:', error);
+      console.error('Verification error:', error);
       
-      if (error instanceof AxiosError) {
-        const errorMessage = error.response?.data?.message || 'Invalid verification code';
-        setErrors({ otp: errorMessage });
-      } else {
-        setErrors({ 
-          otp: error instanceof Error ? error.message : 'Failed to verify code'
-        });
-      }
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Invalid verification code. Please try again.';
+      
+      setErrors({ otp: errorMessage });
       setVerificationSuccess(false);
     } finally {
       setIsLoading(false);
@@ -172,7 +177,7 @@ export default function Register() {
   return (
     <div className="flex">
       {!showOTPModal ? (
-        <div className="w-full px-8 md:w-2/3 sm:px-5 md:px-5 xl:px-32 2xl:px-62 bg-white flex items-center py-20 ">
+        <div className="w-full px-8 md:w-2/3 sm:px-5 md:px-5 xl:px-32 2xl:px-62 bg-white flex items-center py-8">
           <div className="w-full">
             <h2 className="text-xl md:text-4xl font-bold mb-2 text-black text-center relative animate-fade-in">
               Create Account
@@ -361,15 +366,40 @@ export default function Register() {
       ) : (
         <div className="fixed inset-0 bg-primary/80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg max-w-md w-full">
-            <h3 className="text-2xl font-bold mb-4">Enter Verification Code</h3>
+            <h3 className="text-2xl font-bold mb-4 text-center">Enter Verification Code</h3>
             {verificationSuccess ? (
-              <div className="text-green-600 text-center py-4">
-                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <p className="text-lg font-medium">Verification Successful!</p>
-                <p className="text-sm mt-2">Redirecting to home page...</p>
+              <div>
+                <div className="text-black text-center py-4">
+                  <p className="text-xl font-medium text-primary">Verification Successful!</p>
+                  <p className="text-md mt-2 text-primary">Redirecting to home page...</p>
+                </div>
+                <div className="space-y-4">
+              <div className="animate-pulse">
+                <div className="flex items-center justify-center">
+                  <Image
+                    src="/images/heart-svg.svg"
+                    alt="Success Animation"
+                    width={120}
+                    height={120}
+                    className="rounded-full"
+                  />
+                </div>
               </div>
+              <div className="flex flex-col items-center">
+                <div className="text-primary font-bold text-2xl mb-2">
+                  Welcome to HiHome!
+                </div>
+                <div className="text-gray-600 text-center">
+                  <p>Your account has been successfully verified.</p>
+                  <p className="mt-2">You will be redirected to the home page in a few seconds...</p>
+                </div>
+                <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full animate-[progress_20s_linear]"/>
+                </div>
+              </div>
+            </div>
+            </div>
+
             ) : (
               <form onSubmit={handleVerifyOTP}>
                 <input

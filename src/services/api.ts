@@ -65,7 +65,9 @@ export interface UserData {
 
 export interface VerifyOTPResponse {
   message: string | null;
-  data: UserData; 
+  status: boolean;
+  verification_status: boolean;
+  data?: UserData; 
 }
 
 interface VerifyOTPRequest {
@@ -73,25 +75,41 @@ interface VerifyOTPRequest {
   code: number; 
 }
 
+export interface LoginRequest {
+  email?: string;
+  phone?: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  message: string | null;
+  data: UserData | null;
+  registered: boolean;  
+  status?: boolean;
+}
+
+
+const mockUnregisteredUsers = [
+  { email: 'test@unregistered.com', phone: null },
+  { email: null, phone: '966500000000' },
+  { email: 'fake@example.com', phone: null },
+  { email: null, phone: '966511111111' }
+];
+
 export const authAPI = {
   register: async (data: any): Promise<RegisterResponse> => {
-    console.log('Sending registration request:', data);
     try {
       const response = await apiClient.post('/host/auth/register', data);
-      console.log('Registration response:', response.data);
       return {
         message: response.data.message,
         verfication_token: response.data.verfication_token
       };
     } catch (error) {
-      console.log('Registration error:', error);
       throw error;
     }
   },
 
   verifyOTP: async (data: VerifyOTPRequest): Promise<VerifyOTPResponse> => {
-    console.log('Starting OTP verification with data:', { token: 'XXXXX', code: data.code });
-    
     try {
       if (!data.token) {
         throw new Error('Missing verification token');
@@ -105,26 +123,51 @@ export const authAPI = {
         token: data.token,
         code: data.code
       });
-      
-      // Log response for debugging (remove sensitive data)
-      console.log('OTP verification response status:', response.status);
-      console.log('OTP verification successful:', !!response.data?.data);
-
-      if (!response.data?.data) {
-        throw new Error('Invalid OTP verification response');
-      }
 
       return response.data;
 
     } catch (error) {
       if (error instanceof AxiosError) {
-        // Handle specific API errors
-        const errorMessage = error.response?.data?.message || 'OTP verification failed';
-        console.error('OTP verification API error:', errorMessage);
-        throw new Error(errorMessage);
+        if (error.response?.status === 400 || error.response?.status === 401) {
+          throw new Error('Invalid verification code');
+        }
+        throw new Error(error.response?.data?.message || 'Verification failed');
       }
-      console.error('OTP verification error:', error);
       throw error;
     }
-  }
+  },
+
+  login: async (data: LoginRequest): Promise<LoginResponse> => {
+    try {
+      console.log('Checking credentials:', data);
+      
+      const isUnregistered = mockUnregisteredUsers.some(user => 
+        (data.email && user.email === data.email) || 
+        (data.phone && user.phone === data.phone)
+      );
+
+      if (isUnregistered) {
+        console.log('Detected unregistered user:', data);
+        return {
+          message: 'User is not registered',
+          data: null,
+          registered: false,
+          status: false
+        };
+      }
+
+      const response = await apiClient.post('/host/auth/login', data);
+      console.log('Server response:', response.data);
+      
+      return {
+        ...response.data,
+        registered: true,
+        status: true
+      };
+      
+    } catch (error) {
+      console.log('Login error:', error);
+      throw error;
+    }
+  },
 };

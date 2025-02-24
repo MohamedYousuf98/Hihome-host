@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Update import
 import { usePathname } from 'next/navigation';
+import LoginModal from '../general/LoginModal';  // Add this import
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -12,6 +13,8 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const currentLang = 'En';
   const currentCurrency = 'USD';
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);  // Add this state
+  const userMenuRef = useRef<HTMLDivElement>(null); // Add this ref
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +27,20 @@ const Navbar = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Add this useEffect for handling clicks outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const closeMobileMenu = () => {
@@ -69,7 +86,7 @@ const Navbar = () => {
           </div>
 
           {/* User Menu */}
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
             <button 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center space-x-2 cursor-pointer p-2"
@@ -80,20 +97,22 @@ const Navbar = () => {
             {/* User Dropdown */}
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-6 bg-white border border-gray-200 rounded-lg py-4 w-64 shadow-lg">
-               
-                <Link 
-                  href="/login"
-                  className="flex items-center px-4 py-2 text-black hover:text-primary"
+                <button 
+                  onClick={() => {
+                    setIsLoginModalOpen(true);
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="flex items-center px-4 py-2 text-black hover:text-primary w-full text-left cursor-pointer"
                 >
                   <Image 
                     src="/images/login.svg" 
                     alt="Login" 
                     width={20} 
                     height={20} 
-                    className="mr-3" 
+                    className="mr-3 " 
                   />
-                  Log in / Sign up
-                </Link>
+                  Log in 
+                </button>
                 <Link 
                   href="/wishlist" 
                   className="flex items-center px-4 py-2 text-black hover:text-primary"
@@ -166,6 +185,12 @@ const Navbar = () => {
           <Link href="/blog" className="text-gray-700 hover:text-primary">Blog</Link>
         </nav>
       </div>
+
+      {/* Add LoginModal */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </>
   );
 };
