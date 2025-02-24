@@ -70,25 +70,18 @@ export default function Register() {
     setErrors({});
 
     try {
-      if (!formData.phone.match(/^\+?[1-9]\d{9,14}$/)) {
-        setErrors({ phone: 'Invalid phone number format' });
-        return;
-      }
-
-      const validatedData = registerSchema.parse({
-        ...formData,
-        phone: formData.phone.replace(/[^\d+]/g, '')
-      });
+      const validatedData = registerSchema.parse(formData);
 
       const apiData = {
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,
         email: validatedData.email,
         password: validatedData.password,
-        city: validatedData.city,
-        gender: validatedData.gender === 'male' ? 1 : validatedData.gender === 'female' ? 2 : 3,
-        english_proficiency: ['beginner', 'intermediate', 'advanced', 'native'].indexOf(validatedData.english_proficiency) + 1,
-        phone: validatedData.phone.startsWith('+') ? validatedData.phone.substring(1) : validatedData.phone
+        phone: validatedData.phone.startsWith('+') ? validatedData.phone.substring(1) : validatedData.phone,
+        // The following IDs should be obtained from your backend or configuration
+        city_id: 'e12e21-eqeww',
+        gender_id: '12rwr2-231',
+        english_id: 'qwr2-r23d'
       };
 
       const response = await authAPI.register(apiData);
@@ -97,8 +90,6 @@ export default function Register() {
         localStorage.setItem('registration_token', response.verfication_token);
         setVerificationToken(response.verfication_token);
         setShowOTPModal(true);
-      } else {
-        throw new Error('Invalid registration response');
       }
 
     } catch (error) {
@@ -137,35 +128,38 @@ export default function Register() {
 
     try {
       const storedToken = localStorage.getItem('registration_token');
-
-      if (!verificationToken || !storedToken || verificationToken !== storedToken) {
-        throw new Error('Invalid verification token. Please try registering again.');
-      }
-
-      if (!/^\d{4}$/.test(otpCode)) {
-        setErrors({ otp: 'Verification code must be exactly 4 digits' });
-        return;
+      
+      if (!storedToken) {
+        throw new Error('Registration token not found');
       }
 
       const response = await authAPI.verifyOTP({
-        token: verificationToken,
+        token: storedToken,
         code: parseInt(otpCode, 10)
       });
 
       if (response.data) {
         localStorage.removeItem('registration_token');
-        setVerificationSuccess(true);
-        setUser(response.data);
         localStorage.setItem('userData', JSON.stringify(response.data));
+        setUser(response.data);
+        setVerificationSuccess(true);
+        
         setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
+          router.push('/home');
+        }, 300000);
       }
 
     } catch (error) {
-      setErrors({ 
-        otp: error instanceof Error ? error.message : 'Invalid verification code' 
-      });
+      console.error('OTP verification error:', error);
+      
+      if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || 'Invalid verification code';
+        setErrors({ otp: errorMessage });
+      } else {
+        setErrors({ 
+          otp: error instanceof Error ? error.message : 'Failed to verify code'
+        });
+      }
       setVerificationSuccess(false);
     } finally {
       setIsLoading(false);
@@ -374,7 +368,7 @@ export default function Register() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <p className="text-lg font-medium">Verification Successful!</p>
-                <p className="text-sm mt-2">Redirecting to dashboard...</p>
+                <p className="text-sm mt-2">Redirecting to home page...</p>
               </div>
             ) : (
               <form onSubmit={handleVerifyOTP}>

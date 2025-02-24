@@ -25,7 +25,7 @@ export interface UserResource {
   first_name: string;
   last_name: string;
   email: string;
-  // ... add other user properties as needed
+ 
 }
 
 interface UserImage {
@@ -77,7 +77,7 @@ export const authAPI = {
   register: async (data: any): Promise<RegisterResponse> => {
     console.log('Sending registration request:', data);
     try {
-      const response = await apiClient.post('/auth/register', data);
+      const response = await apiClient.post('/host/auth/register', data);
       console.log('Registration response:', response.data);
       return {
         message: response.data.message,
@@ -90,28 +90,40 @@ export const authAPI = {
   },
 
   verifyOTP: async (data: VerifyOTPRequest): Promise<VerifyOTPResponse> => {
-    console.log('Verifying OTP:', data);
+    console.log('Starting OTP verification with data:', { token: 'XXXXX', code: data.code });
+    
     try {
       if (!data.token) {
         throw new Error('Missing verification token');
       }
 
-      const response = await apiClient.post('/auth/verify-otp', {
+      if (!data.code || data.code.toString().length !== 4) {
+        throw new Error('Invalid OTP code format');
+      }
+
+      const response = await apiClient.post('/host/auth/verify-otp', {
         token: data.token,
         code: data.code
       });
       
-      console.log('Verification response:', response.data);
+      // Log response for debugging (remove sensitive data)
+      console.log('OTP verification response status:', response.status);
+      console.log('OTP verification successful:', !!response.data?.data);
 
-      // Validate the response structure
-      if (!response.data || !response.data.data || !response.data.data.access_token) {
-        throw new Error('Invalid response structure: missing access token');
+      if (!response.data?.data) {
+        throw new Error('Invalid OTP verification response');
       }
 
       return response.data;
 
     } catch (error) {
-      console.error('OTP verification failed:', error);
+      if (error instanceof AxiosError) {
+        // Handle specific API errors
+        const errorMessage = error.response?.data?.message || 'OTP verification failed';
+        console.error('OTP verification API error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+      console.error('OTP verification error:', error);
       throw error;
     }
   }
