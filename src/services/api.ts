@@ -9,7 +9,7 @@ const apiClient = axios.create({
     'Accept-Currency': 'sar',
     'Platform': 'iOS',
     'Version': '1.1.2',
-    'x-api-key': 'PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e',
+  
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
