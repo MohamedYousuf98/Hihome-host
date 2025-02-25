@@ -88,14 +88,6 @@ export interface LoginResponse {
   status?: boolean;
 }
 
-
-const mockUnregisteredUsers = [
-  { email: 'test@unregistered.com', phone: null },
-  { email: null, phone: '966500000000' },
-  { email: 'fake@example.com', phone: null },
-  { email: null, phone: '966511111111' }
-];
-
 export const authAPI = {
   register: async (data: any): Promise<RegisterResponse> => {
     try {
@@ -141,23 +133,17 @@ export const authAPI = {
     try {
       console.log('Checking credentials:', data);
       
-      const isUnregistered = mockUnregisteredUsers.some(user => 
-        (data.email && user.email === data.email) || 
-        (data.phone && user.phone === data.phone)
-      );
-
-      if (isUnregistered) {
-        console.log('Detected unregistered user:', data);
-        return {
-          message: 'User is not registered',
-          data: null,
-          registered: false,
-          status: false
-        };
-      }
-
-      const response = await apiClient.post('/host/auth/login', data);
-      console.log('Server response:', response.data);
+      const response = await axios.post('http://dashboard.hihome.sa/api/v1/host/auth/login', data, {
+        headers: {
+          'Accept-Language': 'en',
+          'Accept-Currency': 'sar',
+          'Platform': 'iOS',
+          'Version': '1.1.2',
+          'x-api-key': 'PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
       
       return {
         ...response.data,
@@ -166,8 +152,21 @@ export const authAPI = {
       };
       
     } catch (error) {
-      console.log('Login error:', error);
-      throw error;
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 404) {
+          return {
+            message: 'User not found',
+            data: null,
+            registered: false,
+            status: false
+          };
+        } else if (error.response?.status === 401) {
+          throw new Error('Invalid credentials. Please check your email/phone and password.');
+        } else if (error.response?.data?.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      throw new Error('An error occurred during login. Please try again.');
     }
   },
 };

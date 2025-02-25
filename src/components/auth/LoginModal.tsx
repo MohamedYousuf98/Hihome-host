@@ -43,8 +43,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setIsLoading(true);
     setErrors({});
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     try {
       const loginData = {
         password: formData.password,
@@ -56,14 +54,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           })
       };
 
-      console.log('Attempting login with:', loginData);
       const validatedData = loginSchema.parse(loginData);
       const response = await authAPI.login(validatedData);
-      
-      console.log('Login response:', response);
 
       if (!response.registered || response.status === false) {
-        console.log('Login rejected: User not registered');
         setErrors({ 
           submit: 'This account is not registered. Please sign up first.',
           type: 'error'
@@ -72,7 +66,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
 
       if (response.data) {
-        console.log('Login successful');
         localStorage.setItem('userData', JSON.stringify(response.data));
         localStorage.setItem('accessToken', response.data.access_token);
         onClose();
@@ -80,9 +73,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
 
     } catch (error) {
-      console.error('Login error:', error);
       if (error instanceof z.ZodError) {
-        console.log(' Validation errors:', error.errors);
         const formattedErrors: Record<string, string> = {};
         error.errors.forEach((err) => {
           const path = err.path[0].toString();
@@ -91,7 +82,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         setErrors(formattedErrors);
       } else {
         setErrors({ 
-          submit: error instanceof Error ? error.message : 'Login failed',
+          submit: error instanceof Error ? error.message : 'Login failed. Please try again.',
           type: 'error'
         });
       }

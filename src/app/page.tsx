@@ -303,17 +303,23 @@ export default function Home() {
 
 {/* ---------------------------------- Steps Section -------------------------------------*/}
 <section id="steps-section" className="relative py-16">
-  {/* Background container that animates - Only on desktop */}
+  {/* Background container with conditional margins only on desktop */}
   <div className={`absolute inset-0 transition-all duration-700 ${
-    isStepsFullWidth ? 'mx-0' : 'mx-4 sm:mx-5 md:mx-5 xl:mx-32 2xl:mx-62'
+    isStepsFullWidth 
+      ? 'lg:mx-0' 
+      : 'mx-0 lg:mx-4 lg:sm:mx-5 lg:md:mx-5 lg:xl:mx-32 lg:2xl:mx-62'
   }`}>
     <div 
       className={`w-full h-full bg-[url('/images/bg5.webp')] bg-fixed bg-center bg-no-repeat bg-cover transition-all duration-700 ${
-        isStepsFullWidth ? '' : 'rounded-3xl'
+        isStepsFullWidth 
+          ? 'lg:rounded-none' 
+          : 'lg:rounded-3xl'
       }`}
     />
     <div className={`absolute inset-0 bg-primary/90 transition-all duration-700 ${
-      isStepsFullWidth ? '' : 'rounded-3xl'
+      isStepsFullWidth 
+        ? 'lg:rounded-none' 
+        : 'lg:rounded-3xl'
     }`} />
   </div>
 

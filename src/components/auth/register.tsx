@@ -62,6 +62,57 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [otpValues, setOtpValues] = useState(['', '', '', '']);
+  
+  const handleOtpChange = (index: number, value: string) => {
+    if (isNaN(Number(value))) return;
+    
+    const newOtpValues = [...otpValues];
+    newOtpValues[index] = value;
+    setOtpValues(newOtpValues);
+    setOTPCode(newOtpValues.join(''));
+
+    if (value !== '' && index < 3) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && index > 0 && otpValues[index] === '') {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const renderOtpInputs = () => (
+    <div className="flex justify-between gap-2 mb-4">
+      {[0, 1, 2, 3].map((index) => (
+        <input
+          key={index}
+          id={`otp-${index}`}
+          type="text"
+          maxLength={1}
+          className="w-16 h-16 text-center text-xl font-bold border-1 border-black rounded-lg focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          value={otpValues[index]}
+          onChange={(e) => handleOtpChange(index, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(index, e)}
+          onPaste={(e) => {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').slice(0, 4).split('');
+            const newOtpValues = [...otpValues];
+            pastedData.forEach((value, i) => {
+              if (i < 4 && !isNaN(Number(value))) {
+                newOtpValues[i] = value;
+              }
+            });
+            setOtpValues(newOtpValues);
+            setOTPCode(newOtpValues.join(''));
+          }}
+        />
+      ))}
+    </div>
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +193,6 @@ export default function Register() {
 
       console.log('Verification response:', response);
 
-      // Check if we have a valid success response
       if (response.data ) {
         localStorage.removeItem('registration_token');
         localStorage.setItem('userData', JSON.stringify(response.data));
@@ -153,7 +203,6 @@ export default function Register() {
           router.push('/');
         }, 3000);
       } else {
-        // Handle unsuccessful verification
         throw new Error(response.message || 'Invalid verification code');
       }
 
@@ -402,24 +451,7 @@ export default function Register() {
 
             ) : (
               <form onSubmit={handleVerifyOTP}>
-                <input
-                  type="text"
-                  placeholder="Enter verification code"
-                  className={`${inputStyle} text-center text-lg`}
-                  value={otpCode}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 4) {
-                      setOTPCode(value);
-                    }
-                    if (errors.otp) {
-                      setErrors({...errors, otp: ''});
-                    }
-                  }}
-                  maxLength={4}
-                  pattern="\d{4}"
-                  autoFocus
-                />
+                {renderOtpInputs()}
                 {errors.otp && <p className={errorStyle}>{errors.otp}</p>}
                 <button
                   type="submit"
