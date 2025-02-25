@@ -27,22 +27,33 @@ const ProfileForm: React.FC = () => {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
-
     const fetchProfile = async () => {
       try {
+        console.log('Starting profile fetch...');
         setIsLoading(true);
         setError(null);
+        
+        console.log('Calling profileAPI.getProfile()...');
         const response = await profileAPI.getProfile();
+        console.log('Profile fetch successful:', {
+          responseData: response,
+          profile: response.data
+        });
+        
         setProfile(response.data);
         
         // Pre-fill form data
         if (response.data) {
-          console.log('Received profile data:', response.data);
+          console.log('Setting form data with:', {
+            firstName: response.data.first_name,
+            lastName: response.data.last_name,
+            genderId: response.data.gender?.id,
+            cityId: response.data.city?.id,
+            about: response.data.about,
+            phone: response.data.phone,
+            imagePath: response.data.image?.path
+          });
+          
           setFormData({
             first_name: response.data.first_name || '',
             last_name: response.data.last_name || '',
@@ -52,22 +63,26 @@ const ProfileForm: React.FC = () => {
             about_ar: '',
             english_level: ''
           });
+          
           setPhone(response.data.phone);
           if (response.data.image?.path) {
             setImagePreview(response.data.image.path);
           }
         }
       } catch (err) {
-        if (err instanceof Error && err.message.includes('Please login')) {
-          window.location.href = '/login';
-        } else {
-          setError(err instanceof Error ? err.message : 'Failed to load profile');
-        }
+        console.error('Error in fetchProfile:', {
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined
+        });
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
       } finally {
         setIsLoading(false);
+        console.log('Profile fetch completed. Loading state set to false.');
       }
     };
 
+    console.log('Profile form mounted, initiating profile fetch...');
     fetchProfile();
   }, []);
 

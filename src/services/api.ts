@@ -9,7 +9,7 @@ const apiClient = axios.create({
     'Accept-Currency': 'sar',
     'Platform': 'iOS',
     'Version': '1.1.2',
-  
+    'x-api-key': 'PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e',
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
@@ -221,7 +221,7 @@ export const authAPI = {
           'Accept-Currency': 'sar',
           'Platform': 'iOS',
           'Version': '1.1.2',
-        
+          'x-api-key': 'PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e',
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         }
@@ -279,21 +279,10 @@ export const authAPI = {
 export const profileAPI = {
   getProfile: async (): Promise<ProfileResponse> => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        window.location.href = '/login';
-        throw new Error('Please login to access your profile');
-      }
-
       const response = await apiClient.get('/host/profile');
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('accessToken');
-          window.location.href = '/login';
-          throw new Error('Please login to access your profile');
-        }
         throw new Error(error.response?.data?.message || 'Failed to fetch profile');
       }
       throw error;
@@ -302,28 +291,10 @@ export const profileAPI = {
 
   updateProfile: async (data: UpdateProfileRequest): Promise<ProfileResponse> => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('No access token found');
-      }
-
-      console.log('Sending profile update request:', data);
-
-      const response = await apiClient.put('/host/profile', data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Profile update response:', response.data);
+      const response = await apiClient.put('/host/profile', data);
       return response.data;
     } catch (error) {
-      console.error('Profile update error:', error);
       if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
-          throw new Error('Unauthorized. Please login again.');
-        }
         throw new Error(error.response?.data?.message || 'Failed to update profile');
       }
       throw error;
