@@ -88,6 +88,13 @@ export interface LoginResponse {
   status?: boolean;
 }
 
+export interface ResendOTPResponse {
+  message: string | null;
+  data: {
+    verification_token: string;
+  };
+}
+
 export const authAPI = {
   register: async (data: any): Promise<RegisterResponse> => {
     try {
@@ -115,7 +122,6 @@ export const authAPI = {
         token: data.token,
         code: data.code
       });
-
       return response.data;
 
     } catch (error) {
@@ -131,8 +137,6 @@ export const authAPI = {
 
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     try {
-      console.log('Checking credentials:', data);
-      
       const response = await axios.post('http://dashboard.hihome.sa/api/v1/host/auth/login', data, {
         headers: {
           'Accept-Language': 'en',
@@ -144,7 +148,6 @@ export const authAPI = {
           'Content-Type': 'application/json',
         }
       });
-      
       return {
         ...response.data,
         registered: true,
@@ -167,6 +170,23 @@ export const authAPI = {
         }
       }
       throw new Error('An error occurred during login. Please try again.');
+    }
+  },
+
+  resendOTP: async (token: string): Promise<ResendOTPResponse> => {
+    try {
+      const response = await apiClient.post('/host/resend-otp', { token });
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 404) {
+          throw new Error('Verification session expired or invalid token. Please try registering again.');
+        } else if (error.response?.status === 429) {
+          throw new Error('Too many attempts. Please wait before trying again.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to resend OTP. Please try again.');
+      }
+      throw new Error('Network error. Please check your connection.');
     }
   },
 };

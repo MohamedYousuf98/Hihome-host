@@ -63,7 +63,9 @@ export default function Register() {
   const [user, setUser] = useState<any>(null);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
-  
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+
   const handleOtpChange = (index: number, value: string) => {
     if (isNaN(Number(value))) return;
     
@@ -191,9 +193,7 @@ export default function Register() {
         code: parseInt(otpCode, 10)
       });
 
-      console.log('Verification response:', response);
-
-      if (response.data ) {
+      if (response.data) {
         localStorage.removeItem('registration_token');
         localStorage.setItem('userData', JSON.stringify(response.data));
         setUser(response.data);
@@ -207,14 +207,54 @@ export default function Register() {
       }
 
     } catch (error) {
-      console.error('Verification error:', error);
-      
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Invalid verification code. Please try again.';
       
       setErrors({ otp: errorMessage });
       setVerificationSuccess(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startResendTimer = () => {
+    setResendDisabled(true);
+    setResendTimer(60);
+    const timer = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setResendDisabled(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendOTP = async () => {
+    if (resendDisabled) return;
+    
+    try {
+      setIsLoading(true);
+      const storedToken = localStorage.getItem('registration_token');
+      
+      if (!storedToken) {
+        throw new Error('Registration token not found');
+      }
+
+      const response = await authAPI.resendOTP(storedToken);
+      
+      if (response.data.verification_token) {
+        localStorage.setItem('registration_token', response.data.verification_token);
+        setVerificationToken(response.data.verification_token);
+        startResendTimer();
+      }
+    } catch (error) {
+      setErrors({ 
+        otp: error instanceof Error ? error.message : 'Failed to resend verification code'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -459,6 +499,16 @@ export default function Register() {
                   disabled={isLoading || !otpCode}
                 >
                   {isLoading ? 'Verifying...' : 'Verify Code'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  className={`w-full mt-4 text-primary text-sm cursor-pointer ${resendDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:text-primary/80'}`}
+                  disabled={resendDisabled}
+                >
+                  {resendDisabled 
+                    ? `Resend code in ${resendTimer}s` 
+                    : 'Resend verification code'}
                 </button>
               </form>
             )}
