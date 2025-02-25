@@ -221,7 +221,7 @@ export const authAPI = {
           'Accept-Currency': 'sar',
           'Platform': 'iOS',
           'Version': '1.1.2',
-          'x-api-key': 'PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e',
+        
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         }
@@ -281,6 +281,7 @@ export const profileAPI = {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
+        window.location.href = '/login';
         throw new Error('Please login to access your profile');
       }
 
@@ -291,7 +292,7 @@ export const profileAPI = {
         if (error.response?.status === 401) {
           localStorage.removeItem('accessToken');
           window.location.href = '/login';
-          throw new Error('Session expired. Please login again.');
+          throw new Error('Please login to access your profile');
         }
         throw new Error(error.response?.data?.message || 'Failed to fetch profile');
       }
