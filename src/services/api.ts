@@ -15,6 +15,34 @@ const apiClient = axios.create({
   }
 });
 
+// Add axios interceptor to handle authentication
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      // Only redirect if we're not already on the login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface RegisterResponse {
   message: string | null;
   verfication_token: string;
@@ -95,6 +123,56 @@ export interface ResendOTPResponse {
   };
 }
 
+// Add these new interfaces
+export interface City {
+  id: string;
+  name_en: string; 
+  name_ar: string;
+  activation: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BankInfo {
+  holder_name: string;
+  bank_name: string;
+  account_number: string;
+  iban: string;
+}
+
+export interface UserProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string;
+  image: UserImage;
+  gender: Gender;
+  city: City;
+  notifications_count: number;
+  about: string | null;
+  email_verified: boolean;
+  phone_verified: boolean;
+  user_type: number;
+  enable_notifications: boolean;
+  bank_info: BankInfo;
+}
+
+interface ProfileResponse {
+  message: string | null;
+  data: UserProfile;
+}
+
+export interface UpdateProfileRequest {
+  first_name: string;
+  last_name: string;
+  gender_id: string;
+  city_id: string;
+  about_en?: string;
+  about_ar?: string;
+  english_level?: string;
+}
+
 export const authAPI = {
   register: async (data: any): Promise<RegisterResponse> => {
     try {
@@ -148,6 +226,12 @@ export const authAPI = {
           'Content-Type': 'application/json',
         }
       });
+
+      // Save token after successful login
+      if (response.data?.data?.access_token) {
+        localStorage.setItem('accessToken', response.data.data.access_token);
+      }
+
       return {
         ...response.data,
         registered: true,
@@ -189,4 +273,59 @@ export const authAPI = {
       throw new Error('Network error. Please check your connection.');
     }
   },
+};
+
+// Add this to your existing authAPI object
+export const profileAPI = {
+  getProfile: async (): Promise<ProfileResponse> => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Please login to access your profile');
+      }
+
+      const response = await apiClient.get('/host/profile');
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('accessToken');
+          window.location.href = '/login';
+          throw new Error('Session expired. Please login again.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to fetch profile');
+      }
+      throw error;
+    }
+  },
+
+  updateProfile: async (data: UpdateProfileRequest): Promise<ProfileResponse> => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No access token found');
+      }
+
+      console.log('Sending profile update request:', data);
+
+      const response = await apiClient.put('/host/profile', data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Profile update response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Profile update error:', error);
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 401) {
+          throw new Error('Unauthorized. Please login again.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to update profile');
+      }
+      throw error;
+    }
+  }
 };
