@@ -22,7 +22,6 @@ curl --location 'https://6c733c06-d83f-4f67-bc78-578e26b8f936.mock.pstmn.io/v1/h
 --header 'Accept-Currency: sar' \
 --header 'Platform: iOS' \
 --header 'Version: 1.1.2' \
---header 'x-api-key: PMAK-6522b362f515e100386afb67-59cdcd0cfc69a2d0470c4f94aebf4dbd9e' \
 --header 'Content-Type: application/json' \
 --data '{
     "token": "Q7617WWykVjDb0e64SjCIccVjYD9qcUb98u1osEje3WNOWo4EIZLmWjLT7VA",
