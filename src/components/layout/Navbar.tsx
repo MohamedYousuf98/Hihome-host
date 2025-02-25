@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react'; // Update import
 import { usePathname } from 'next/navigation';
-import LoginModal from '../general/LoginModal';  // Add this import
+import LoginModal from '../auth/LoginModal';  // Add this import
 
 const Navbar = () => {
   const pathname = usePathname();

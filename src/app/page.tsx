@@ -428,7 +428,7 @@ export default function Home() {
     </div>
 
     <div className="text-center mt-8">
-      <button className="bg-white text-primary px-8 py-3 rounded-full hover:bg-gray-100 transition-colors duration-300 font-semibold">
+      <button className="bg-white text-primary px-8 py-3 rounded-full hover:bg-gray-100 transition-colors duration-300 font-semibold cursor-pointer">
         Start Hosting Today
       </button>
     </div>
@@ -522,7 +522,7 @@ export default function Home() {
     </div>
 
     <div className="text-center mt-12">
-      <button className="bg-gray-100 text-primary px-8 py-3 rounded-full border-1 border-primary transition-colors duration-300 font-semibold">
+      <button className="bg-gray-100 text-primary px-8 py-3 rounded-full border-1 border-primary transition-colors duration-300 font-semibold cursor-pointer">
         Get Started Now
       </button>
     </div>
@@ -759,7 +759,7 @@ export default function Home() {
        {/* ------------------------------------What We Offer---------------------------------------*/}
        <section className="px-4 sm:px-5 md:px-5 xl:px-32 2xl:px-62 py-24 bg-gray-100 mt-24 mb-16">
             <div
-            className="h-[600px] overflow-y-scroll bg-cover bg-fixed bg-center bg-no-repeat rounded-2xl scrollbar-hide relative"
+            className="h-[620px] overflow-y-scroll bg-cover bg-fixed bg-center bg-no-repeat rounded-2xl scrollbar-hide relative"
             style={{ 
               backgroundImage: "url('/images/bg5.webp')",
               scrollbarWidth: 'none',
@@ -769,7 +769,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-primary/0"></div>
             <div className="mt-110 transition-transform duration-500 ease-out relative z-10"></div>
               <div className="bg-white p-8 sm:py-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 mt-4 text-black">
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 mt-2 text-black">
           What We Offer at Hi Home
               </h2>
               <p className="text-center text-gray-600 max-w-3xl mx-auto mb-16">
@@ -832,7 +832,7 @@ export default function Home() {
           </div>
               </div>
               <div className="text-center mt-16">
-          <button className="bg-primary text-white px-8 py-3 rounded-full hover:bg-[#B43D23] transition-colors duration-300">
+          <button className="bg-primary text-white px-8 py-3 rounded-full hover:bg-[#B43D23] transition-colors duration-300 cursor-pointer">
           Learn More About Our Services
           </button>
               </div>

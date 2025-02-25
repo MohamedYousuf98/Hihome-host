@@ -151,7 +151,7 @@ export default function Register() {
         
         setTimeout(() => {
           router.push('/');
-        }, 4000);
+        }, 3000);
       } else {
         // Handle unsuccessful verification
         throw new Error(response.message || 'Invalid verification code');
