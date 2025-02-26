@@ -5,6 +5,33 @@ import Image from 'next/image';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { profileAPI, UserProfile } from '@/services/api';
+import { z } from 'zod';
+
+// Define the validation schema
+const nameRegex = /^[a-zA-Zء-ي\s]*$/; // يسمح فقط بالحروف العربية والإنجليزية والمسافات
+
+const profileSchema = z.object({
+  first_name: z.string()
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name must not exceed 50 characters')
+    .regex(nameRegex, 'Name should only contain letters, no numbers allowed'),
+  last_name: z.string()
+    .min(2, 'Last name must be at least 2 characters')
+    .max(50, 'Last name must not exceed 50 characters')
+    .regex(nameRegex, 'Name should only contain letters, no numbers allowed'),
+  gender_id: z.string()
+    .min(1, 'Please select a gender'),
+  city_id: z.string()
+    .min(1, 'City is required'),
+  about_en: z.string()
+    .min(50, 'About section (English) must be at least 50 characters')
+    .max(500, 'About section (English) must not exceed 500 characters'),
+  about_ar: z.string()
+    .min(50, 'About section (Arabic) must be at least 50 characters')
+    .max(500, 'About section (Arabic) must not exceed 500 characters'),
+  english_level: z.string()
+    .min(1, 'Please select your English proficiency level')
+});
 
 const ProfileForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -26,6 +53,7 @@ const ProfileForm: React.FC = () => {
     english_level: ''
   });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -104,7 +132,11 @@ const ProfileForm: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    console.log(`Field ${name} changed to:`, value);
+    
+    if ((name === 'first_name' || name === 'last_name') && !nameRegex.test(value)) {
+      return; 
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -113,28 +145,42 @@ const ProfileForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
+
     try {
+      // Validate form data
+      const validatedData = profileSchema.parse(formData);
       setIsSubmitting(true);
       setSubmitError(null);
       
-      const response = await profileAPI.updateProfile(formData);
+      const response = await profileAPI.updateProfile(validatedData);
       setProfile(response.data);
-      setShowSuccessModal(true); // Show success modal instead of alert
+      setShowSuccessModal(true);
       
-      // Auto-hide modal after 3 seconds
       setTimeout(() => {
         setShowSuccessModal(false);
       }, 5000);
       
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to update profile');
+      if (err instanceof z.ZodError) {
+        // Handle validation errors
+        const errors: { [key: string]: string } = {};
+        err.errors.forEach((error) => {
+          if (error.path) {
+            errors[error.path[0]] = error.message;
+          }
+        });
+        setValidationErrors(errors);
+      } else {
+        setSubmitError(err instanceof Error ? err.message : 'Failed to update profile');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const SuccessModal = () => (
-    <div className="fixed inset-0 bg-primary/80 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-primary/80 flex items-center justify-center p-2 z-50">
       <div className="bg-white p-8 rounded-lg max-w-md w-full">
         <div className="text-center py-4">
           <p className="text-xl font-medium text-primary">Profile Updated Successfully!</p>
@@ -171,33 +217,39 @@ const ProfileForm: React.FC = () => {
   const tabs = [
     { 
       id: 'profile', 
-      label: 'Profile',
-      icon: '/icons/profile.png',
+      label: 'Update Profile',
+      icon: '/images/upd-profile.svg',  
       titleIcon: '/icons/profile.png'
     },
     { 
       id: 'password', 
-      label: 'Password',
-      icon: '/icons/password.png',
+      label: 'Change Password',
+      icon: '/images/password.svg',
       titleIcon: '/icons/password.png'
     },
     { 
       id: 'email', 
-      label: 'Email',
-      icon: '/icons/email.png',
+      label: 'Change Email',
+      icon: '/images/email.svg',
       titleIcon: '/icons/email.png'
     },
     { 
       id: 'phone', 
-      label: 'Phone',
-      icon: '/icons/phone.png',
+      label: 'Change Phone',
+      icon: '/images/phone.svg',
       titleIcon: '/icons/phone.png'
     },
   ];
 
   if (error) {
-    return <div className="text-center text-red-500 p-4">{error}</div>;
+    return <div className="text-center text-primary p-4">{error}</div>;
   }
+
+  const renderError = (fieldName: string) => {
+    return validationErrors[fieldName] ? (
+      <p className="mt-1 text-sm text-primary">{validationErrors[fieldName]}</p>
+    ) : null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br">
@@ -208,7 +260,6 @@ const ProfileForm: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header with Image Upload and Tabs */}
           <div className="bg-gray-100 rounded-t-2xl p-6">
-            {/* Change from flex to flex-col on mobile, row on larger screens */}
             <div className="flex flex-col sm:flex-row items-center gap-8">
               {/* Profile Image - centered on mobile */}
               <div className="relative group shrink-0 mb-6 sm:mb-0">
@@ -223,9 +274,7 @@ const ProfileForm: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <svg className="w-16 h-16 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                     <img src="/images/choose-img.svg" alt="upload-img" width={64} height={64} />
                     </div>
                   )}
                 </div>
@@ -233,7 +282,7 @@ const ProfileForm: React.FC = () => {
                   onClick={triggerFileInput}
                   className="absolute bottom-0 right-0 bg-white p-1.5 rounded-full shadow-lg transform transition-transform duration-200 hover:scale-110"
                 >
-                  <svg className="w-4 h-4 text-[#cd4d33]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -256,16 +305,20 @@ const ProfileForm: React.FC = () => {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex flex-row items-center justify-center space-x-2 p-3 rounded-xl transition-all duration-300 cursor-pointer ${
                         activeTab === tab.id
-                          ? 'bg-[#cd4d33] text-white'
+                          ? 'bg-primary text-white'
                           : 'bg-white text-gray-600 hover:bg-gray-50'
                       }`}
                     >
                       <Image
                         src={tab.icon}
                         alt={tab.label}
-                        width={20}
-                        height={20}
-                        className={`${activeTab === tab.id ? 'brightness-200' : ''}`}
+                        width={28} 
+                        height={28} 
+                        className={`transition-all duration-300 ${
+                          activeTab === tab.id 
+                            ? 'brightness-0 invert scale-110' 
+                            : ''
+                        }`}
                       />
                       <span className="text-sm font-semibold">{tab.label}</span>
                     </button>
@@ -281,16 +334,10 @@ const ProfileForm: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-8 bg-white p-6 rounded-xl">
                 <div className="flex flex-col items-center mb-12">
                   <div className="flex items-center justify-center space-x-3 mb-4">
-                    <Image
-                      src="/icons/profile.png"
-                      alt="Profile"
-                      width={32}
-                      height={32}
-                    />
                     <h2 className="text-2xl font-bold text-gray-800">Edit Profile Information</h2>
                   </div>
                   <div className="relative w-full max-w-[300px]">
-                    <div className="h-1 bg-gradient-to-r from-transparent via-[#cd4d33] to-transparent animate-pulse"></div>
+                    <div className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
                   </div>
                 </div>
 
@@ -306,8 +353,11 @@ const ProfileForm: React.FC = () => {
                       placeholder="Enter your first name"
                       value={formData.first_name}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        validationErrors.first_name ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm`}
                     />
+                    {renderError('first_name')}
                   </div>
                   
                   <div>
@@ -321,8 +371,11 @@ const ProfileForm: React.FC = () => {
                       placeholder="Enter your last name"
                       value={formData.last_name}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        validationErrors.last_name ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm`}
                     />
+                    {renderError('last_name')}
                   </div>
                   
                   <div>
@@ -334,12 +387,15 @@ const ProfileForm: React.FC = () => {
                       name="gender_id"
                       value={formData.gender_id}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full text-gray-500 text-sm px-4 py-3 border border-gray-200 rounded-lg outline-none transition-all duration-200 cursor-pointer"
+                      className={`mt-1 block w-full text-gray-500 text-sm px-4 py-3 border ${
+                        validationErrors.gender_id ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 cursor-pointer`}
                     >
                       <option value="" className="text-gray-200">Select gender</option>
                       <option value="1">Male</option>
                       <option value="2">Female</option>
                     </select>
+                    {renderError('gender_id')}
                   </div>
                   
                   <div>
@@ -353,8 +409,11 @@ const ProfileForm: React.FC = () => {
                       placeholder="Enter your city"
                       value={formData.city_id}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        validationErrors.city_id ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm`}
                     />
+                    {renderError('city_id')}
                   </div>
                   
                   <div className="md:col-span-2">
@@ -366,7 +425,9 @@ const ProfileForm: React.FC = () => {
                       name="english_level"
                       value={formData.english_level}
                       onChange={handleInputChange}
-                      className="mt-1 block w-full px-4 py-3 text-gray-500 text-sm border border-gray-200 rounded-lg outline-none transition-all duration-200 cursor-pointer"
+                      className={`mt-1 block w-full px-4 py-3 text-gray-500 text-sm border ${
+                        validationErrors.english_level ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 cursor-pointer`}
                     >
                       <option value="" className="text-gray-200">Select proficiency level</option>
                       <option>Beginner</option>
@@ -374,6 +435,7 @@ const ProfileForm: React.FC = () => {
                       <option>Advanced</option>
                       <option>Native/Fluent</option>
                     </select>
+                    {renderError('english_level')}
                   </div>
 
                   {/* About You in English */}
@@ -388,8 +450,11 @@ const ProfileForm: React.FC = () => {
                       onChange={handleInputChange}
                       rows={4}
                       placeholder="Write about yourself in English..."
-                      className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        validationErrors.about_en ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm`}
                     />
+                    {renderError('about_en')}
                   </div>
 
                   {/* About You in Arabic */}
@@ -405,19 +470,22 @@ const ProfileForm: React.FC = () => {
                       rows={4}
                       dir="rtl"
                       placeholder="اكتب عن نفسك بالعربية..."
-                      className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        validationErrors.about_ar ? 'border-primary' : 'border-gray-200'
+                      } rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm`}
                     />
+                    {renderError('about_ar')}
                   </div>
                 </div>
                 
                 <div className="flex justify-center md:col-span-2">
                   {submitError && (
-                    <p className="text-red-500 mb-4">{submitError}</p>
+                    <p className="text-primary mb-4">{submitError}</p>
                   )}
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`px-6 py-2 bg-[#cd4d33] text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer ${
+                    className={`px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer ${
                       isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -432,16 +500,10 @@ const ProfileForm: React.FC = () => {
               <div className="space-y-6 bg-white p-6 rounded-xl">
                 <div className="flex flex-col items-center mb-12">
                   <div className="flex items-center justify-center space-x-3 mb-4">
-                    <Image
-                      src="/icons/password.png"
-                      alt="Password"
-                      width={32}
-                      height={32}
-                    />
                     <h2 className="text-2xl font-bold text-gray-800">Change Password</h2>
                   </div>
                   <div className="relative w-full max-w-[300px]">
-                    <div className="h-1 bg-gradient-to-r from-transparent via-[#cd4d33] to-transparent animate-pulse"></div>
+                    <div className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
                   </div>
                 </div>
                 <div className="max-w-md mx-auto">
@@ -452,13 +514,13 @@ const ProfileForm: React.FC = () => {
                     type="password"
                     id="newPassword"
                     placeholder="Enter new password"
-                    className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                    className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
                   />
                 </div>
                 <div className="flex justify-center mt-8">
                   <button 
                     type="button" 
-                    className="px-6 py-2 bg-[#cd4d33] text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
+                    className="px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
                   >
                     Update Password
                   </button>
@@ -471,16 +533,10 @@ const ProfileForm: React.FC = () => {
               <div className="space-y-6 bg-white p-6 rounded-xl">
                 <div className="flex flex-col items-center mb-12">
                   <div className="flex items-center justify-center space-x-3 mb-4">
-                    <Image
-                      src="/icons/email.png"
-                      alt="Email"
-                      width={32}
-                      height={32}
-                    />
                     <h2 className="text-2xl font-bold text-gray-800">Change Email Address</h2>
                   </div>
                   <div className="relative w-full max-w-[300px]">
-                    <div className="h-1 bg-gradient-to-r from-transparent via-[#cd4d33] to-transparent animate-pulse"></div>
+                    <div className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
                   </div>
                 </div>
                 <div className="max-w-md mx-auto">
@@ -491,13 +547,13 @@ const ProfileForm: React.FC = () => {
                     type="email"
                     id="newEmail"
                     placeholder="Enter new email"
-                    className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none  focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
+                    className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent transition-all duration-200 placeholder:text-gray-300 placeholder:text-sm"
                   />
                 </div>
                 <div className="flex justify-center mt-8">
                   <button 
                     type="button" 
-                    className="px-6 py-2 bg-[#cd4d33] text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
+                    className="px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
                   >
                     Update Email
                   </button>
@@ -511,16 +567,10 @@ const ProfileForm: React.FC = () => {
                 <div className="space-y-6">
                   <div className="flex flex-col items-center mb-12">
                     <div className="flex items-center justify-center space-x-3 mb-4">
-                      <Image
-                        src="/icons/phone.png"
-                        alt="Phone"
-                        width={32}
-                        height={32}
-                      />
                       <h2 className="text-2xl font-bold text-gray-800">Change Phone Number</h2>
                     </div>
                     <div className="relative w-full max-w-[300px]">
-                      <div className="h-1 bg-gradient-to-r from-transparent via-[#cd4d33] to-transparent animate-pulse"></div>
+                      <div className="h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse"></div>
                     </div>
                   </div>
                   <div className="max-w-md mx-auto">
@@ -550,7 +600,7 @@ const ProfileForm: React.FC = () => {
                   <div className="flex justify-center mt-8">
                     <button 
                       type="button" 
-                      className="px-6 py-2 bg-[#cd4d33] text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
+                      className="px-6 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors duration-200 cursor-pointer"
                     >
                       Update Phone Number
                     </button>

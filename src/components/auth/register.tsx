@@ -453,7 +453,7 @@ export default function Register() {
           </div>
         </div>
       ) : (
-        <div className="fixed inset-0 bg-primary/80 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-primary/80 flex items-center justify-center p-2 z-50">
           <div className="bg-white p-8 rounded-lg max-w-md w-full">
             <h3 className="text-2xl font-bold mb-4 text-center">Enter Verification Code</h3>
             {verificationSuccess ? (
