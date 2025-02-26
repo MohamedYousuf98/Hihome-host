@@ -173,8 +173,19 @@ export interface UpdateProfileRequest {
   english_level?: string;
 }
 
+interface RegisterData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  phone: string;
+  city: string;
+  gender: string;
+  english_proficiency: string;
+}
+
 export const authAPI = {
-  register: async (data: any): Promise<RegisterResponse> => {
+  register: async (data: RegisterData): Promise<RegisterResponse> => {
     try {
       const response = await apiClient.post('/host/auth/register', data);
       return {

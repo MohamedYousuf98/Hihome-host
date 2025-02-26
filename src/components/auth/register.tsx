@@ -57,10 +57,8 @@ export default function Register() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showOTPModal, setShowOTPModal] = useState(false);
-  const [verificationToken, setVerificationToken] = useState('');
   const [otpCode, setOTPCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const [resendDisabled, setResendDisabled] = useState(false);
@@ -139,7 +137,6 @@ export default function Register() {
       
       if (response?.verfication_token) {
         localStorage.setItem('registration_token', response.verfication_token);
-        setVerificationToken(response.verfication_token);
         setShowOTPModal(true);
       }
 
@@ -196,7 +193,6 @@ export default function Register() {
       if (response.data) {
         localStorage.removeItem('registration_token');
         localStorage.setItem('userData', JSON.stringify(response.data));
-        setUser(response.data);
         setVerificationSuccess(true);
         
         setTimeout(() => {
@@ -248,7 +244,6 @@ export default function Register() {
       
       if (response.data.verification_token) {
         localStorage.setItem('registration_token', response.data.verification_token);
-        setVerificationToken(response.data.verification_token);
         startResendTimer();
       }
     } catch (error) {

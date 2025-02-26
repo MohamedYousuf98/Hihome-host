@@ -4,11 +4,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-import { profileAPI, UserProfile } from '@/services/api';
-import { z } from 'zod';
+import { profileAPI } from '@/services/api'; // Remove UserProfile import
+import * as z from 'zod';
 
 // Define the validation schema
-const nameRegex = /^[a-zA-Zء-ي\s]*$/; // يسمح فقط بالحروف العربية والإنجليزية والمسافات
+const nameRegex = /^[a-zA-Zء-ي\s]*$/; 
 
 const profileSchema = z.object({
   first_name: z.string()
@@ -38,7 +38,6 @@ const ProfileForm: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [phone, setPhone] = useState("");
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,8 +67,6 @@ const ProfileForm: React.FC = () => {
           responseData: response,
           profile: response.data
         });
-        
-        setProfile(response.data);
         
         // Pre-fill form data
         if (response.data) {
@@ -148,13 +145,11 @@ const ProfileForm: React.FC = () => {
     setValidationErrors({});
 
     try {
-      // Validate form data
       const validatedData = profileSchema.parse(formData);
       setIsSubmitting(true);
       setSubmitError(null);
       
-      const response = await profileAPI.updateProfile(validatedData);
-      setProfile(response.data);
+      await profileAPI.updateProfile(validatedData); // Remove response variable
       setShowSuccessModal(true);
       
       setTimeout(() => {
@@ -274,7 +269,13 @@ const ProfileForm: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                     <img src="/images/choose-img.svg" alt="upload-img" width={64} height={64} />
+                      <Image
+                        src="/images/choose-img.svg"
+                        alt="upload-img"
+                        width={64}
+                        height={64}
+                        priority
+                      />
                     </div>
                   )}
                 </div>
